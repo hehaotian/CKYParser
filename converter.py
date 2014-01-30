@@ -7,35 +7,31 @@ LING571 HW2
 
 Created on Thu Jan 23 22:16:23 2014
 
-@author: haotianhe
+@author: Haotian He
 """
 
 import sys
 
 productions = {}
+single_nter = []
+mix_rules = []
+long_rules = []
 
 def convert(cfg, cnf):
     
-    global productions
-    reserves, singnter, mixrules, lonrules = sort(cfg)
+    global productions, single_nter, mix_rules, long_rules
 
-    addrules(mixrules)
+    sort(cfg)
+    sort_mix(mix_rules)
+    sort_long(long_rules)
+#sort_single(single_nter)
+    print productions
 
-
-def addrules(mixrules):
-
-    global productions
-
-    for i in len(mixrules):
-
-
+# type different productions, and put them into different lists
+# the first step
 def sort(cfg):
     
-    reserves = []
-    singnter = []
-    mixrules = []
-    lonrules = []
-    
+    global productions, single_nter, mix_rules, long_rules
     init_appr = True
 
     for line in cfg.readlines():
@@ -53,21 +49,89 @@ def sort(cfg):
 
             if not "'" in right:
                 if len(rhs) == 2:
-                    reserves.append(rule)
+                    if productions.has_key(rule[0]) == False:
+                        productions[rule[0]] = []
+                    productions[rule[0]].append(rule[1] + " " + rule[2])
                 elif len(rhs) == 1:
-                    singnter.append(rule)
+                        single_nter.append(rule)
                 else:
-                    lonrules.append(rule)
+                    long_rules.append(rule)
             elif len(rhs) == 1:
-                reserves.append(rule)
+                if productions.has_key(rule[0]) == False:
+                    productions[rule[0]] = []
+                productions[rule[0]].append(rule[1])
             else:
-                mixrules.append(rule)
+                mix_rules.append(rule)
 
+
+# handle the mix productions
+# the second step
+def sort_mix(mix_rules):
+
+    global productions, single_nter, long_rules
+    
+    for i in range(0, len(mix_rules)):
+        for j in range(0, len(mix_rules[i])):
+            if "'" in mix_rules[i][j]:
+                word = mix_rules[i][j]
+                
+                key = list(productions.keys())
+                found_match = ""
+                for k in range(0, len(key)):
+                    if word in productions[key[k]]:
+                        mix_rules[i][j] = key[k]
+                        found_match = key[k]
+                if mix_rules[i][j] != found_match:
+                    name = "M" + str(i)
+                    if productions.has_key(name) == False:
+                        productions[name] = []
+                    productions[name].append(word)
+                    mix_rules[i][j] = name
+    
+        if (len(mix_rules[i]) == 3):
+            if productions.has_key(mix_rules[i][0]) == False:
+                productions[mix_rules[i][0]] = []
+            productions[mix_rules[i][0]].append(mix_rules[i][1] + " " + mix_rules[i][2])
+        elif (len(mix_rules[i]) == 2):
+            single_nter.append(mix_rules[i])
         else:
-            continue
+            long_rules.append(mix_rules[i])
 
-    return reserves, singnter, mixrules, lonrules
 
+# handle the long non-terminal productions
+# the third step
+def sort_long(long_rules):
+    for i in range(0, len(long_rules)):
+        recur(long_rules[i], i * 10)
+
+# sub-function helping to hand the long non-terminal productions
+# the nested step
+def recur(rule, x):
+    if len(rule) == 3:
+        if productions.has_key(rule[0]) == False:
+            productions[rule[0]] = []
+        productions[rule[0]].append(rule[1] + " " + rule[2])
+    else:
+        name = "X" + str(x)
+        if productions.has_key(rule[0]) == False:
+            productions[rule[0]] = []
+        productions[rule[0]].append(name + " " + rule[len(rule) - 1])
+        rule = rule[1:len(rule)-1]
+        rule.insert(0, name)
+        return recur(rule, x + 1)
+
+
+# handle the single non-terminal productions
+# the last step
+def sort_single(single_nter):
+
+    global productions
+
+    for i in range(0, len(single_nter)):
+        key = list(productions.keys())
+        for t in range(0, len(key)):
+            if (key[t] == single_nter[i][1]):
+                
 
 
 
